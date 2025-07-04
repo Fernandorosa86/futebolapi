@@ -10,10 +10,10 @@ public class Clube {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
+    private String nome;
     private String estado;
     private LocalDate dataCriacao;
-    private Boolean ativo;
+    private Boolean status;
 
     public Long getId() {
         return id;
@@ -23,12 +23,12 @@ public class Clube {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public String getNome() {
+        return nome;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setNome(String nome) {
+        this.nome = nome;
     }
 
     public String getEstado() {
@@ -47,11 +47,11 @@ public class Clube {
         this.dataCriacao = dataCriacao;
     }
 
-    public Boolean getAtivo() {
-        return ativo;
+    public Boolean getStatus() {
+        return status;
     }
 
-    public void setAtivo(Boolean ativo) {
-        this.ativo = ativo;
+    public void setStatus(Boolean status) {
+        this.status = status;
     }
 }
