@@ -9,6 +9,10 @@ import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 
 
 @RestController
@@ -66,6 +70,22 @@ public class ClubeController {
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
+    }
+
+    @GetMapping
+    public ResponseEntity<?> listarClubes(
+            @RequestParam(required = false) String nome,
+            @RequestParam(required = false) String estado,
+            @RequestParam(required = false) Boolean status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String ordenarPor,
+            @RequestParam(defaultValue = "asc") String direcao
+    ){
+        Page<ClubeResponseDto> pagina = clubeService.listarClubes(
+                nome, estado, status, page, size, ordenarPor, direcao
+        );
+        return ResponseEntity.status(HttpStatus.OK).body(pagina);
     }
 }
 

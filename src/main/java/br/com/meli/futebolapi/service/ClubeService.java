@@ -1,14 +1,17 @@
 package br.com.meli.futebolapi.service;
 
-import br.com.meli.futebolapi.model.Clube;
 import br.com.meli.futebolapi.dto.ClubeRequestDto;
 import br.com.meli.futebolapi.dto.ClubeResponseDto;
-import br.com.meli.futebolapi.repository.ClubeRepository;
-// import br.com.meli.futebolapi.repository.PartidaRepository;
 import br.com.meli.futebolapi.exception.NotFoundException;
+import br.com.meli.futebolapi.model.Clube;
+import br.com.meli.futebolapi.repository.ClubeRepository;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 
 
@@ -99,5 +102,32 @@ public class ClubeService {
                 .orElseThrow(() -> new NotFoundException("Clube não encontrado"));
 
         return toClubeResponseDto(clube);
+    }
+
+    public Page<ClubeResponseDto> listarClubes(
+            String nome, String estado, Boolean status, int page, int size,
+            String ordenarPor, String direcao
+    ){
+        Specification<Clube> spec = (root, query, cb) -> cb.conjunction();
+        if (nome != null && !nome.isEmpty()) {
+            spec = spec.and((root, query, cb) ->cb.like(cb.lower(root.get("nome")), "%" + nome.toLowerCase() + "%"));
+        }
+        if (estado != null && !estado.isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("estado"), estado));
+        }
+        if(status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"),status));
+        }
+        Sort.Direction direction = Sort.Direction.ASC;
+        if("desc".equalsIgnoreCase(direcao)) {
+            direction = Sort.Direction.DESC;
+        }
+        Sort sort = Sort.by(direction, ordenarPor);
+
+        PageRequest pageRequest = PageRequest.of(page, size, sort);
+
+        Page<Clube> clubes = clubeRepository.findAll(spec, pageRequest);
+
+        return clubes.map(this::toClubeResponseDto);
     }
 }
