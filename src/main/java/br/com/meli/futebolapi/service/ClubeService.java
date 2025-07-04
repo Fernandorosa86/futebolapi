@@ -74,7 +74,10 @@ public class ClubeService {
         //     throw new DataIntegrityViolationException("Não pode definir data de criação posterior a uma partida já realizada por esse clube");
         // }
 
-        fromRequestDto(clubeRequestDto);
+        clube.setNome(clubeRequestDto.getNome());
+        clube.setEstado(clubeRequestDto.getEstado());
+        clube.setDataCriacao(clubeRequestDto.getDataCriacao());
+        clube.setStatus(clubeRequestDto.getStatus());
 
         clube = clubeRepository.save(clube);
 
