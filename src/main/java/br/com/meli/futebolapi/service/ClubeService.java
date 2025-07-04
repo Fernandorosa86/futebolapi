@@ -62,9 +62,10 @@ public class ClubeService {
         Clube clube = clubeRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Clube não encontrado"));
 
+
         boolean doisClubesMesmoNomeEstado =
-                clubeRepository.existsByNomeAndEstado(clubeRequestDto.getNome(), clubeRequestDto.getEstado())
-                        && !(clube.getNome().equals(clubeRequestDto.getNome())) && clube.getEstado().equals(clubeRequestDto.getEstado());
+                clubeRepository.existsByNomeAndEstado(clubeRequestDto.getNome(), clubeRequestDto.getEstado()) &&
+                        !(clube.getNome().equals(clubeRequestDto.getNome()) && clube.getEstado().equals(clubeRequestDto.getEstado()));
         if(doisClubesMesmoNomeEstado) {
             throw new DataIntegrityViolationException("Já existe um clube com este nome");
         }
