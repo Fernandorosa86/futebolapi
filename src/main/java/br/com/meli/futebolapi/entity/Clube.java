@@ -1,4 +1,4 @@
-package br.com.meli.futebolapi.model;
+package br.com.meli.futebolapi.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;

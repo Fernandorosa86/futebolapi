@@ -2,16 +2,16 @@ package br.com.meli.futebolapi.service;
 
 import br.com.meli.futebolapi.dto.ClubeRequestDto;
 import br.com.meli.futebolapi.dto.ClubeResponseDto;
+import br.com.meli.futebolapi.entity.Clube;
 import br.com.meli.futebolapi.exception.NotFoundException;
-import br.com.meli.futebolapi.model.Clube;
 import br.com.meli.futebolapi.repository.ClubeRepository;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Service;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
 
 
 
@@ -106,28 +106,35 @@ public class ClubeService {
 
     public Page<ClubeResponseDto> listarClubes(
             String nome, String estado, Boolean status, int page, int size,
-            String ordenarPor, String direcao
-    ){
-        Specification<Clube> spec = (root, query, cb) -> cb.conjunction();
-        if (nome != null && !nome.isEmpty()) {
-            spec = spec.and((root, query, cb) ->cb.like(cb.lower(root.get("nome")), "%" + nome.toLowerCase() + "%"));
-        }
-        if (estado != null && !estado.isEmpty()) {
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("estado"), estado));
-        }
-        if(status != null) {
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"),status));
-        }
-        Sort.Direction direction = Sort.Direction.ASC;
-        if("desc".equalsIgnoreCase(direcao)) {
-            direction = Sort.Direction.DESC;
-        }
-        Sort sort = Sort.by(direction, ordenarPor);
+            String ordenarPor, String direcao) {
 
-        PageRequest pageRequest = PageRequest.of(page, size, sort);
+        Sort.Direction direction = "desc".equalsIgnoreCase(direcao) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, ordenarPor));
 
-        Page<Clube> clubes = clubeRepository.findAll(spec, pageRequest);
+        if (nome != null && estado != null && status != null) {
+            return clubeRepository.findByNomeContainingIgnoreCaseAndEstadoAndStatus(nome, estado, status, pageable)
+                    .map(this::toClubeResponseDto);
+        }
 
-        return clubes.map(this::toClubeResponseDto);
+        if (nome != null && estado != null) {
+            return clubeRepository.findByNomeContainsIgnoreCaseAndEstado(nome, estado, pageable)
+                    .map(this::toClubeResponseDto);
+        }
+
+        if (nome != null) {
+            return clubeRepository.findByNomeContainingIgnoreCase(nome, pageable)
+                    .map(this::toClubeResponseDto);
+        }
+        if (estado != null) {
+            return clubeRepository.findByEstado(estado, pageable)
+                    .map(this::toClubeResponseDto);
+        }
+        if (status != null) {
+            return clubeRepository.findByStatus(status, pageable)
+                    .map(this::toClubeResponseDto);
+        }
+        return clubeRepository.findAll(pageable)
+                .map(this::toClubeResponseDto);
+
     }
 }
