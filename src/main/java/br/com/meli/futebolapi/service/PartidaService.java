@@ -182,5 +182,11 @@ public class PartidaService {
         //Tentar refatorar esse código, muita coisa repetida.
     }
 
+    public void removerPartida(Long id) {
+        Partida partida = partidaRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Partida não encontrada."));
+        partidaRepository.delete(partida);
+    }
+
 
 }

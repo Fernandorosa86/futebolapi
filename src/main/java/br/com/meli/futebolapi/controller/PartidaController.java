@@ -52,4 +52,13 @@ public class PartidaController {
         }
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> excluirPartida(@PathVariable Long id) {
+        try{
+            partidaService.removerPartida(id);
+            return ResponseEntity.noContent().build();
+        } catch (br.com.meli.futebolapi.exception.NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
 }
