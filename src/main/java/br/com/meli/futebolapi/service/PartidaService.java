@@ -188,5 +188,11 @@ public class PartidaService {
         partidaRepository.delete(partida);
     }
 
+    public PartidaResponseDto buscarPartidaPorId(Long id) {
+        Partida partida = partidaRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Partida não encontrada."));
+        return toPartidaResponseDto(partida);
+    }
+
 
 }
