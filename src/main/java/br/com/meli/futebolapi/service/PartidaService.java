@@ -11,6 +11,10 @@ import br.com.meli.futebolapi.repository.ClubeRepository;
 import br.com.meli.futebolapi.repository.EstadioRepository;
 import br.com.meli.futebolapi.repository.PartidaRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -193,6 +197,41 @@ public class PartidaService {
                 .orElseThrow(() -> new NotFoundException("Partida não encontrada."));
         return toPartidaResponseDto(partida);
     }
+
+    public Page<PartidaResponseDto> listarPartidas(
+            Long clubeId, Long estadioId, int page, int size, String ordenarPor, String direcao
+    ) {
+        Sort.Direction direction = "desc".equalsIgnoreCase(direcao) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, ordenarPor));
+
+        if (clubeId != null && estadioId != null) {
+            Clube clube = clubeRepository.findById(clubeId)
+                    .orElseThrow(() -> new NotFoundException("Clube não encontrado."));
+            Estadio estadio = estadioRepository.findById(estadioId)
+                    .orElseThrow(() -> new NotFoundException("Estádio não encontrado"));
+
+            return partidaRepository.findByClubeCasaOrClubeForaAndEstadio(clube, clube, estadio, pageable)
+                    .map(this::toPartidaResponseDto);
+        }
+        if (clubeId != null) {
+            Clube clube = clubeRepository.findById(clubeId)
+                    .orElseThrow(() ->new NotFoundException("Clube não encontrado."));
+            return partidaRepository
+                    .findByClubeCasaOrClubeFora(clube, clube, pageable)
+                    .map(this::toPartidaResponseDto);
+
+        }
+        if (estadioId != null) {
+            Estadio estadio = estadioRepository.findById(estadioId)
+                    .orElseThrow(() -> new NotFoundException("Estadio não encontrado."));
+            return partidaRepository
+                    .findByEstadio(estadio, pageable)
+                    .map(this::toPartidaResponseDto);
+        }
+        return partidaRepository.findAll(pageable)
+                .map(this::toPartidaResponseDto);
+    }
+
 
 
 }

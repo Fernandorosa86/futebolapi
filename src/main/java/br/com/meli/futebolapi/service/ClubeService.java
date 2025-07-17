@@ -2,9 +2,12 @@ package br.com.meli.futebolapi.service;
 
 import br.com.meli.futebolapi.dto.ClubeRequestDto;
 import br.com.meli.futebolapi.dto.ClubeResponseDto;
+import br.com.meli.futebolapi.dto.RetrospectoResponseDto;
 import br.com.meli.futebolapi.entity.Clube;
+import br.com.meli.futebolapi.entity.Partida;
 import br.com.meli.futebolapi.exception.NotFoundException;
 import br.com.meli.futebolapi.repository.ClubeRepository;
+import br.com.meli.futebolapi.repository.PartidaRepository;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -13,13 +16,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-
+import java.util.List;
 
 
 @Service
 public class ClubeService {
 
     private final ClubeRepository clubeRepository;
+    private final PartidaRepository partidaRepository;
 
     //private final PartidaRepository partidaRepository;
     private Clube fromRequestDto(ClubeRequestDto clubeRequestDto) {
@@ -44,9 +48,10 @@ public class ClubeService {
         return clubeResponseDto;
     }
 
-    public ClubeService(ClubeRepository clubeRepository /*, PartidaRepository partidaRepository */) {
+    public ClubeService(ClubeRepository clubeRepository, /*, PartidaRepository partidaRepository */PartidaRepository partidaRepository) {
         this.clubeRepository = clubeRepository;
         // this.partidaRepository = partidaRepository;
+        this.partidaRepository = partidaRepository;
     }
 
     public ClubeResponseDto salvar(@NotNull ClubeRequestDto clubeRequestDto) {
@@ -136,5 +141,47 @@ public class ClubeService {
         return clubeRepository.findAll(pageable)
                 .map(this::toClubeResponseDto);
 
+    }
+
+    public RetrospectoResponseDto calcularRetrospecto(Long clubeId) {
+        Clube clube = clubeRepository.findById(clubeId)
+                .orElseThrow(() -> new NotFoundException("Clube não encontrado."));
+
+        List<Partida> partidas = partidaRepository.findByClubeCasaOrClubeFora(clube, clube);
+
+        int vitorias = 0, empates = 0, derrotas = 0, golsFeitos = 0, golsContra = 0;
+
+        for (Partida partida : partidas) {
+            boolean ehCasa = partida.getClubeCasa().getId().equals(clubeId);
+            boolean ehFora = partida.getClubeFora().getId().equals(clubeId);
+
+            int golsClube, golsAdversario;
+            if (ehCasa) {
+                golsClube = partida.getGolsCasa();
+                golsAdversario = partida.getGolsFora();
+            }else{
+                golsClube = partida.getGolsFora();
+                golsAdversario = partida.getGolsCasa();
+            }
+            golsFeitos += golsClube;
+            golsContra += golsAdversario;
+
+            if (golsClube > golsAdversario){
+                vitorias++;
+            }else if (golsClube == golsAdversario){
+                empates++;
+            }else {
+
+            }
+        }
+        RetrospectoResponseDto retrospectoResponseDto = new RetrospectoResponseDto();
+
+        retrospectoResponseDto.setVitorias(vitorias);
+        retrospectoResponseDto.setEmpates(empates);
+        retrospectoResponseDto.setDerrotas(derrotas);
+        retrospectoResponseDto.setGolsFeitos(golsFeitos);
+        retrospectoResponseDto.setGolsContra(golsContra);
+
+        return retrospectoResponseDto;
     }
 }

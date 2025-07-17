@@ -2,6 +2,7 @@ package br.com.meli.futebolapi.controller;
 
 import br.com.meli.futebolapi.dto.ClubeRequestDto;
 import br.com.meli.futebolapi.dto.ClubeResponseDto;
+import br.com.meli.futebolapi.dto.RetrospectoResponseDto;
 import br.com.meli.futebolapi.exception.NotFoundException;
 import br.com.meli.futebolapi.service.ClubeService;
 import jakarta.validation.Valid;
@@ -86,6 +87,16 @@ public class ClubeController {
                 nome, estado, status, page, size, ordenarPor, direcao
         );
         return ResponseEntity.status(HttpStatus.OK).body(pagina);
+    }
+
+    @GetMapping("/{id}/retrospecto")
+    public ResponseEntity<?> retrospecto(@PathVariable Long id) {
+        try {
+            RetrospectoResponseDto retrospectoResponseDto = clubeService.calcularRetrospecto(id);
+            return ResponseEntity.status(HttpStatus.OK).body(retrospectoResponseDto);
+        }catch (br.com.meli.futebolapi.exception.NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
 }
 

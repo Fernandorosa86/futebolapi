@@ -13,7 +13,7 @@ public interface ClubeRepository extends JpaRepository<Clube, Long>, JpaSpecific
     boolean existsByNomeAndEstado(String nome, String estado);
 
 
-    Optional<Clube> findByNomeAndEstado(String nome, String estado);
+
 
     Page<Clube> findByNomeContainingIgnoreCase(String nome, Pageable pageable);
     Page<Clube> findByEstado(String estado, Pageable pageable);
