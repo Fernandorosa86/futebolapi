@@ -2,6 +2,7 @@ package br.com.meli.futebolapi.service;
 
 import br.com.meli.futebolapi.dto.ClubeRequestDto;
 import br.com.meli.futebolapi.dto.ClubeResponseDto;
+import br.com.meli.futebolapi.dto.ConfrontoResponseDto;
 import br.com.meli.futebolapi.dto.RetrospectoResponseDto;
 import br.com.meli.futebolapi.entity.Clube;
 import br.com.meli.futebolapi.entity.Partida;
@@ -16,7 +17,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 @Service
@@ -184,4 +188,41 @@ public class ClubeService {
 
         return retrospectoResponseDto;
     }
+
+    public List<ConfrontoResponseDto> retrospectoContraAdversarios(Long clubeId) {
+        Clube clube = clubeRepository.findById(clubeId)
+                .orElseThrow(() -> new NotFoundException("Clube não encontrado."));
+
+        List<Partida> partidas = partidaRepository.findByClubeCasaOrClubeFora(clube, clube);
+
+        Map<Long, ConfrontoResponseDto> mapa = new HashMap<>();
+
+        for (Partida partida : partidas) {
+            boolean ehCasa = partida.getClubeCasa().getId().equals(clubeId);
+            Clube adversario = ehCasa ? partida.getClubeFora() : partida.getClubeCasa();
+
+            ConfrontoResponseDto confrontoResponseDto = mapa.getOrDefault(adversario.getId(), new ConfrontoResponseDto());
+            confrontoResponseDto.setAdversario(adversario.getNome());
+
+            int golsClube = ehCasa ? partida.getGolsCasa() : partida.getGolsFora();
+            int golsAdversario = ehCasa ? partida.getGolsFora() : partida.getGolsCasa();
+
+            confrontoResponseDto.setGolsFeitos(confrontoResponseDto.getGolsFeitos() + golsClube);
+            confrontoResponseDto.setGolsContra(confrontoResponseDto.getGolsContra() + golsAdversario);
+
+            if (golsClube > golsAdversario) {
+                confrontoResponseDto.setVitorias(confrontoResponseDto.getVitorias() + 1);
+            }else if (golsClube == golsAdversario){
+                confrontoResponseDto.setEmpates(confrontoResponseDto.getEmpates() + 1);
+            }else{
+                confrontoResponseDto.setDerrotas(confrontoResponseDto.getDerrotas() + 1);
+            }
+
+            mapa.put(adversario.getId(), confrontoResponseDto);
+        }
+
+        return new ArrayList<>(mapa.values());
+    }
+
+
 }

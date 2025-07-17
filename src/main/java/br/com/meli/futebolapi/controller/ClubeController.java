@@ -2,18 +2,17 @@ package br.com.meli.futebolapi.controller;
 
 import br.com.meli.futebolapi.dto.ClubeRequestDto;
 import br.com.meli.futebolapi.dto.ClubeResponseDto;
+import br.com.meli.futebolapi.dto.ConfrontoResponseDto;
 import br.com.meli.futebolapi.dto.RetrospectoResponseDto;
 import br.com.meli.futebolapi.exception.NotFoundException;
 import br.com.meli.futebolapi.service.ClubeService;
 import jakarta.validation.Valid;
-import org.springframework.data.crossstore.ChangeSetPersister;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
+
+import java.util.List;
 
 
 @RestController
@@ -82,7 +81,7 @@ public class ClubeController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String ordenarPor,
             @RequestParam(defaultValue = "asc") String direcao
-    ){
+    ) {
         Page<ClubeResponseDto> pagina = clubeService.listarClubes(
                 nome, estado, status, page, size, ordenarPor, direcao
         );
@@ -94,7 +93,17 @@ public class ClubeController {
         try {
             RetrospectoResponseDto retrospectoResponseDto = clubeService.calcularRetrospecto(id);
             return ResponseEntity.status(HttpStatus.OK).body(retrospectoResponseDto);
-        }catch (br.com.meli.futebolapi.exception.NotFoundException e) {
+        } catch (br.com.meli.futebolapi.exception.NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/retrospecto-contra-adversarios")
+    public ResponseEntity<?> retrospectoContraAdversarios(@PathVariable Long id) {
+        try {
+            List<ConfrontoResponseDto> confrontos = clubeService.retrospectoContraAdversarios(id);
+            return ResponseEntity.status(HttpStatus.OK).body(confrontos);
+        } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
