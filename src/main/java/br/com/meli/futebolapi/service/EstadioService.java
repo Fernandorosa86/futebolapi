@@ -1,7 +1,7 @@
 package br.com.meli.futebolapi.service;
 
-import br.com.meli.futebolapi.dto.EstadioRequestDto;
-import br.com.meli.futebolapi.dto.EstadioResponseDto;
+import br.com.meli.futebolapi.dto.Estadio.EstadioRequestDto;
+import br.com.meli.futebolapi.dto.Estadio.EstadioResponseDto;
 import br.com.meli.futebolapi.entity.Estadio;
 import br.com.meli.futebolapi.exception.NotFoundException;
 import br.com.meli.futebolapi.repository.EstadioRepository;

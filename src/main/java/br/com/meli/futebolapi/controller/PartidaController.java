@@ -1,8 +1,8 @@
 package br.com.meli.futebolapi.controller;
 
 
-import br.com.meli.futebolapi.dto.PartidaRequestDto;
-import br.com.meli.futebolapi.dto.PartidaResponseDto;
+import br.com.meli.futebolapi.dto.Partida.PartidaRequestDto;
+import br.com.meli.futebolapi.dto.Partida.PartidaResponseDto;
 import br.com.meli.futebolapi.exception.NotFoundException;
 import br.com.meli.futebolapi.service.PartidaService;
 import jakarta.persistence.EntityNotFoundException;
@@ -77,13 +77,14 @@ public class PartidaController {
     public ResponseEntity<?> listarPartida(
             @RequestParam(required = false) Long clubeId,
             @RequestParam(required = false) Long estadioId,
+            @RequestParam(required = false) Boolean goleadas,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10")  int size,
             @RequestParam(defaultValue = "id") String ordenarPor,
             @RequestParam(defaultValue = "asc") String direcao
     ){
         try {
-            Page<PartidaResponseDto> pagina = partidaService.listarPartidas(clubeId, estadioId, page, size, ordenarPor, direcao);
+            Page<PartidaResponseDto> pagina = partidaService.listarPartidas(clubeId, estadioId, goleadas, page, size, ordenarPor, direcao);
             return ResponseEntity.status(HttpStatus.OK).body(pagina);
         } catch (br.com.meli.futebolapi.exception.NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());

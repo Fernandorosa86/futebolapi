@@ -1,4 +1,4 @@
-package br.com.meli.futebolapi.dto;
+package br.com.meli.futebolapi.dto.Estadio;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

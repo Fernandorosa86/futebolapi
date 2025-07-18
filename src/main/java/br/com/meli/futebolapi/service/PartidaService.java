@@ -1,8 +1,8 @@
 package br.com.meli.futebolapi.service;
 
 
-import br.com.meli.futebolapi.dto.PartidaRequestDto;
-import br.com.meli.futebolapi.dto.PartidaResponseDto;
+import br.com.meli.futebolapi.dto.Partida.PartidaRequestDto;
+import br.com.meli.futebolapi.dto.Partida.PartidaResponseDto;
 import br.com.meli.futebolapi.entity.Clube;
 import br.com.meli.futebolapi.entity.Estadio;
 import br.com.meli.futebolapi.entity.Partida;
@@ -11,10 +11,7 @@ import br.com.meli.futebolapi.repository.ClubeRepository;
 import br.com.meli.futebolapi.repository.EstadioRepository;
 import br.com.meli.futebolapi.repository.PartidaRepository;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -46,7 +43,6 @@ public class PartidaService {
     }
 
 
-
     public PartidaResponseDto cadastrarPartida(PartidaRequestDto partidaRequestDto) {
         if (partidaRequestDto.getClubeCasaId().equals(partidaRequestDto.getClubeForaId())) {
             throw new DataIntegrityViolationException("Clubes não podem ser iguais!");
@@ -63,7 +59,7 @@ public class PartidaService {
         }
 
         if (partidaRequestDto.getDataHora().isBefore(clubeCasa.getDataCriacao().atStartOfDay()) ||
-            partidaRequestDto.getDataHora().isBefore(clubeFora.getDataCriacao().atStartOfDay())) {
+                partidaRequestDto.getDataHora().isBefore(clubeFora.getDataCriacao().atStartOfDay())) {
             throw new DataIntegrityViolationException("Data da partida não pode ser anterior a data de criação de um dos clubes.");
 
         }
@@ -76,14 +72,14 @@ public class PartidaService {
 
         for (Partida partida : partidasCasa) {
             LocalDateTime dataJogo = partida.getDataHora();
-            if(!dataJogo.isBefore(inicio) && !dataJogo.isAfter(fim)) {
+            if (!dataJogo.isBefore(inicio) && !dataJogo.isAfter(fim)) {
                 throw new DataIntegrityViolationException("O clube mandante já tem partida marcada a menos de 48 horas desta.");
             }
         }
 
         for (Partida partida : partidasFora) {
             LocalDateTime dataJogo = partida.getDataHora();
-            if(!dataJogo.isBefore(inicio) && !dataJogo.isAfter(fim)) {
+            if (!dataJogo.isBefore(inicio) && !dataJogo.isAfter(fim)) {
                 throw new DataIntegrityViolationException("O clube visitante já tem partida marcada a menos de 48 horas desta.");
             }
 
@@ -116,7 +112,7 @@ public class PartidaService {
         Partida partida = partidaRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Partida não encontrada!"));
 
-        if(partidaRequestDto.getClubeCasaId().equals(partidaRequestDto.getClubeForaId())) {
+        if (partidaRequestDto.getClubeCasaId().equals(partidaRequestDto.getClubeForaId())) {
             throw new DataIntegrityViolationException("Clubes não podem ser iguais.");
         }
 
@@ -134,7 +130,7 @@ public class PartidaService {
         }
 
         if (partidaRequestDto.getDataHora().isBefore(clubeCasa.getDataCriacao().atStartOfDay()) ||
-            partidaRequestDto.getDataHora().isBefore(clubeFora.getDataCriacao().atStartOfDay())) {
+                partidaRequestDto.getDataHora().isBefore(clubeFora.getDataCriacao().atStartOfDay())) {
             throw new DataIntegrityViolationException("Data/hora da partida não pode ser anterior à data de criação dos clubes.");
         }
 
@@ -145,7 +141,7 @@ public class PartidaService {
         for (Partida p : partidasCasa) {
             if (!p.getId().equals(id)) {
                 LocalDateTime dataJogo = p.getDataHora();
-                if(!dataJogo.isBefore(inicio) && !dataJogo.isAfter(fim)) {
+                if (!dataJogo.isBefore(inicio) && !dataJogo.isAfter(fim)) {
                     throw new DataIntegrityViolationException("Clube casa já possui partida marcada a menos de 48 horas desta.");
                 }
             }
@@ -155,7 +151,7 @@ public class PartidaService {
         for (Partida p : partidasFora) {
             if (!p.getId().equals(id)) {
                 LocalDateTime dataJogo = partida.getDataHora();
-                if(!dataJogo.isBefore(inicio) && !dataJogo.isAfter(fim)) {
+                if (!dataJogo.isBefore(inicio) && !dataJogo.isAfter(fim)) {
                     throw new DataIntegrityViolationException("Clube visitante já possui partida marcada a menos de 48 horas desta.");
                 }
             }
@@ -199,10 +195,12 @@ public class PartidaService {
     }
 
     public Page<PartidaResponseDto> listarPartidas(
-            Long clubeId, Long estadioId, int page, int size, String ordenarPor, String direcao
+            Long clubeId, Long estadioId, Boolean goleadas, int page, int size, String ordenarPor, String direcao
     ) {
         Sort.Direction direction = "desc".equalsIgnoreCase(direcao) ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, ordenarPor));
+
+        Page<Partida> partidasPage;
 
         if (clubeId != null && estadioId != null) {
             Clube clube = clubeRepository.findById(clubeId)
@@ -210,28 +208,38 @@ public class PartidaService {
             Estadio estadio = estadioRepository.findById(estadioId)
                     .orElseThrow(() -> new NotFoundException("Estádio não encontrado"));
 
-            return partidaRepository.findByClubeCasaOrClubeForaAndEstadio(clube, clube, estadio, pageable)
-                    .map(this::toPartidaResponseDto);
-        }
-        if (clubeId != null) {
+            partidasPage = partidaRepository.findByClubeCasaOrClubeForaAndEstadio(clube, clube, estadio, pageable);
+        } else if (clubeId != null) {
             Clube clube = clubeRepository.findById(clubeId)
-                    .orElseThrow(() ->new NotFoundException("Clube não encontrado."));
-            return partidaRepository
-                    .findByClubeCasaOrClubeFora(clube, clube, pageable)
-                    .map(this::toPartidaResponseDto);
+                    .orElseThrow(() -> new NotFoundException("Clube não encontrado."));
+            partidasPage = partidaRepository.findByClubeCasaOrClubeFora(clube, clube, pageable);
 
-        }
-        if (estadioId != null) {
+        } else if (estadioId != null) {
             Estadio estadio = estadioRepository.findById(estadioId)
                     .orElseThrow(() -> new NotFoundException("Estadio não encontrado."));
-            return partidaRepository
-                    .findByEstadio(estadio, pageable)
+            partidasPage = partidaRepository.findByEstadio(estadio, pageable);
+        } else {
+            partidasPage = partidaRepository.findAll(pageable);
+        }
+
+        if(goleadas == null || !goleadas) {
+            return partidasPage
                     .map(this::toPartidaResponseDto);
         }
-        return partidaRepository.findAll(pageable)
-                .map(this::toPartidaResponseDto);
+
+        List<Partida> listaGoleadas = partidasPage.getContent().stream()
+                .filter(partida -> Math.abs(partida.getGolsCasa() - partida.getGolsFora()) >=3)
+                .toList();
+
+        int start = Math.min(page * size, listaGoleadas.size());
+        int end = Math.min(start + size, listaGoleadas.size());
+
+        List<PartidaResponseDto> pageGoleadas = listaGoleadas.subList(start, end).stream()
+                .map(this::toPartidaResponseDto)
+                .toList();
+
+        return new PageImpl<>(pageGoleadas, pageable, listaGoleadas.size());
+
     }
-
-
 
 }

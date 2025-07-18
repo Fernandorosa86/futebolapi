@@ -1,6 +1,13 @@
 package br.com.meli.futebolapi.service;
 
-import br.com.meli.futebolapi.dto.*;
+import br.com.meli.futebolapi.dto.Clube.ClubeRankingDto;
+import br.com.meli.futebolapi.dto.Clube.ClubeRequestDto;
+import br.com.meli.futebolapi.dto.Clube.ClubeResponseDto;
+import br.com.meli.futebolapi.dto.Confronto.ConfrontoDiretoResponseDto;
+import br.com.meli.futebolapi.dto.Confronto.ConfrontoResponseDto;
+import br.com.meli.futebolapi.dto.Partida.PartidaSimplesDto;
+import br.com.meli.futebolapi.dto.Retrospecto.RetrospectoResponseDto;
+import br.com.meli.futebolapi.dto.Retrospecto.RetrospectoSimplesDto;
 import br.com.meli.futebolapi.entity.Clube;
 import br.com.meli.futebolapi.entity.Partida;
 import br.com.meli.futebolapi.exception.NotFoundException;
@@ -14,10 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @Service
@@ -276,6 +280,73 @@ public class ClubeService {
         confrontoDiretoResponseDto.setPartidas(partidaSimplesDto);
 
         return confrontoDiretoResponseDto;
+    }
+
+    public List<ClubeRankingDto> getRanking(String criterio) {
+        List<Clube> clubes = clubeRepository.findAll();
+        List<ClubeRankingDto> ranking = new ArrayList<>();
+
+        for (Clube clube : clubes) {
+            List<Partida> partidas = partidaRepository.findByClubeCasaOrClubeFora(clube, clube);
+
+            int vitorias = 0, empates = 0, derrotas = 0, gols = 0, jogos = 0;
+
+            for (Partida partida : partidas) {
+                int golsClube, golsAdversario;
+                boolean ehCasa = partida.getClubeCasa().getId().equals(clube.getId());
+                if (ehCasa) {
+                    golsClube = partida.getGolsCasa();
+                    golsAdversario = partida.getGolsFora();
+                } else {
+                    golsClube = partida.getGolsFora();
+                    golsAdversario = partida.getGolsCasa();
+                }
+
+                gols += golsClube;
+                jogos++;
+
+                if (golsClube > golsAdversario) {
+                    vitorias++;
+                } else if (golsClube == golsAdversario) {
+                    empates++;
+                } else {
+                    derrotas++;
+                }
+            }
+
+            int pontos = vitorias * 3 + empates;
+
+            ClubeRankingDto clubeRankingDto = new ClubeRankingDto();
+            clubeRankingDto.setClubeId(clube.getId());
+            clubeRankingDto.setClubeNome(clube.getNome());
+            clubeRankingDto.setEstado(clube.getEstado());
+            clubeRankingDto.setVitorias(vitorias);
+            clubeRankingDto.setEmpates(empates);
+            clubeRankingDto.setDerrotas(derrotas);
+            clubeRankingDto.setGols(gols);
+            clubeRankingDto.setPontos(pontos);
+            clubeRankingDto.setJogos(jogos);
+
+            ranking.add(clubeRankingDto);
+        }
+
+        switch (criterio.toLowerCase()) {
+            case "gols" -> ranking.removeIf(c -> c.getGols() == 0);
+            case "vitorias" -> ranking.removeIf(c -> c.getVitorias() == 0);
+            case "jogos" -> ranking.removeIf(c -> c.getJogos() == 0);
+            default -> ranking.removeIf(c -> c.getPontos() == 0);
+        }
+
+        Comparator<ClubeRankingDto> comparator = switch (criterio.toLowerCase()) {
+            case "gols" -> Comparator.comparingInt(ClubeRankingDto::getGols).reversed();
+            case "vitorias" -> Comparator.comparingInt(ClubeRankingDto::getVitorias).reversed();
+            case "jogos" -> Comparator.comparingInt(ClubeRankingDto::getJogos).reversed();
+            default -> Comparator.comparingInt(ClubeRankingDto::getPontos).reversed();
+        };
+
+        ranking.sort(comparator);
+
+        return ranking;
     }
 
 

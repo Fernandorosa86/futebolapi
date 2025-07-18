@@ -1,4 +1,4 @@
-package br.com.meli.futebolapi.dto;
+package br.com.meli.futebolapi.dto.Partida;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;

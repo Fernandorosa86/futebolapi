@@ -1,15 +1,15 @@
-package br.com.meli.futebolapi.dto;
+package br.com.meli.futebolapi.dto.Partida;
 
 import java.time.LocalDateTime;
 
-public class PartidaSimplesDto {
+public class PartidaResponseDto {
     private Long id;
-    private LocalDateTime dataHora;
     private String clubeCasa;
     private String clubeFora;
+    private String estadio;
     private Integer golsCasa;
     private Integer golsFora;
-    private String estadio;
+    private LocalDateTime dataHora;
 
     public Long getId() {
         return id;
@@ -17,14 +17,6 @@ public class PartidaSimplesDto {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public LocalDateTime getDataHora() {
-        return dataHora;
-    }
-
-    public void setDataHora(LocalDateTime dataHora) {
-        this.dataHora = dataHora;
     }
 
     public String getClubeCasa() {
@@ -43,6 +35,14 @@ public class PartidaSimplesDto {
         this.clubeFora = clubeFora;
     }
 
+    public String getEstadio() {
+        return estadio;
+    }
+
+    public void setEstadio(String estadio) {
+        this.estadio = estadio;
+    }
+
     public Integer getGolsCasa() {
         return golsCasa;
     }
@@ -59,11 +59,11 @@ public class PartidaSimplesDto {
         this.golsFora = golsFora;
     }
 
-    public String getEstadio() {
-        return estadio;
+    public LocalDateTime getDataHora() {
+        return dataHora;
     }
 
-    public void setEstadio(String estadio) {
-        this.estadio = estadio;
+    public void setDataHora(LocalDateTime dataHora) {
+        this.dataHora = dataHora;
     }
 }

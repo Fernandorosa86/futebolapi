@@ -1,7 +1,7 @@
 package br.com.meli.futebolapi.controller;
 
-import br.com.meli.futebolapi.dto.EstadioRequestDto;
-import br.com.meli.futebolapi.dto.EstadioResponseDto;
+import br.com.meli.futebolapi.dto.Estadio.EstadioRequestDto;
+import br.com.meli.futebolapi.dto.Estadio.EstadioResponseDto;
 import br.com.meli.futebolapi.service.EstadioService;
 import jakarta.validation.Valid;
 import org.springframework.dao.DataIntegrityViolationException;

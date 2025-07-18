@@ -1,4 +1,4 @@
-package br.com.meli.futebolapi.dto;
+package br.com.meli.futebolapi.dto.Clube;
 
 import jakarta.validation.constraints.*;
 import java.time.LocalDate;

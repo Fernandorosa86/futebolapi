@@ -1,6 +1,11 @@
 package br.com.meli.futebolapi.controller;
 
-import br.com.meli.futebolapi.dto.*;
+import br.com.meli.futebolapi.dto.Clube.ClubeRankingDto;
+import br.com.meli.futebolapi.dto.Clube.ClubeRequestDto;
+import br.com.meli.futebolapi.dto.Clube.ClubeResponseDto;
+import br.com.meli.futebolapi.dto.Confronto.ConfrontoDiretoResponseDto;
+import br.com.meli.futebolapi.dto.Confronto.ConfrontoResponseDto;
+import br.com.meli.futebolapi.dto.Retrospecto.RetrospectoResponseDto;
 import br.com.meli.futebolapi.exception.NotFoundException;
 import br.com.meli.futebolapi.service.ClubeService;
 import jakarta.validation.Valid;
@@ -114,6 +119,14 @@ public class ClubeController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
+
+    @GetMapping("/ranking")
+    public ResponseEntity<?> ranking(
+            @RequestParam(defaultValue = "pontos") String criterio) {
+        List<ClubeRankingDto> ranking = clubeService.getRanking(criterio);
+        return ResponseEntity.status(HttpStatus.OK).body(ranking);
+    }
+
 }
 
 

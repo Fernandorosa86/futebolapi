@@ -1,11 +1,29 @@
-package br.com.meli.futebolapi.dto;
+package br.com.meli.futebolapi.dto.Retrospecto;
 
-public class RetrospectoResponseDto {
+public class RetrospectoSimplesDto {
+    private Long clubeId;
+    private String clubeNome;
     private int vitorias;
     private int empates;
     private int derrotas;
     private int golsFeitos;
     private int golsContra;
+
+    public Long getClubeId() {
+        return clubeId;
+    }
+
+    public void setClubeId(Long clubeId) {
+        this.clubeId = clubeId;
+    }
+
+    public String getClubeNome() {
+        return clubeNome;
+    }
+
+    public void setClubeNome(String clubeNome) {
+        this.clubeNome = clubeNome;
+    }
 
     public int getVitorias() {
         return vitorias;

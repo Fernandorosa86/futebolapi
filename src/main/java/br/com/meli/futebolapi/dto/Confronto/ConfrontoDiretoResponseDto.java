@@ -1,4 +1,7 @@
-package br.com.meli.futebolapi.dto;
+package br.com.meli.futebolapi.dto.Confronto;
+
+import br.com.meli.futebolapi.dto.Partida.PartidaSimplesDto;
+import br.com.meli.futebolapi.dto.Retrospecto.RetrospectoSimplesDto;
 
 import java.util.List;
 

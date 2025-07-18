@@ -1,4 +1,4 @@
-package br.com.meli.futebolapi.dto;
+package br.com.meli.futebolapi.dto.Confronto;
 
 public class ConfrontoResponseDto {
 
