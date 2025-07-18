@@ -1,9 +1,6 @@
 package br.com.meli.futebolapi.controller;
 
-import br.com.meli.futebolapi.dto.ClubeRequestDto;
-import br.com.meli.futebolapi.dto.ClubeResponseDto;
-import br.com.meli.futebolapi.dto.ConfrontoResponseDto;
-import br.com.meli.futebolapi.dto.RetrospectoResponseDto;
+import br.com.meli.futebolapi.dto.*;
 import br.com.meli.futebolapi.exception.NotFoundException;
 import br.com.meli.futebolapi.service.ClubeService;
 import jakarta.validation.Valid;
@@ -104,6 +101,16 @@ public class ClubeController {
             List<ConfrontoResponseDto> confrontos = clubeService.retrospectoContraAdversarios(id);
             return ResponseEntity.status(HttpStatus.OK).body(confrontos);
         } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/confronto-direto")
+    public ResponseEntity<?> confrontoDireto( @PathVariable Long id, @RequestParam Long adversarioId) {
+        try {
+            ConfrontoDiretoResponseDto resultado = clubeService.getConfrontoDireto(id, adversarioId);
+            return ResponseEntity.status(HttpStatus.OK).body(resultado);
+        }catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }

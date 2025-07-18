@@ -16,6 +16,10 @@ public interface PartidaRepository extends JpaRepository<Partida, Long> {
 
     List<Partida> findByClubeCasaOrClubeFora(Clube clubeCasa, Clube clubeFora);
     List<Partida> findByEstadioAndDataHoraBetween(Estadio estadio, LocalDateTime inicio, LocalDateTime fim);
+    List<Partida> findByClubeCasaAndClubeForaOrClubeCasaAndClubeFora(
+            Clube clubeA, Clube clubeB, Clube clubeB2, Clube clubeA2
+    );
+
 
     //usar Pageable para listagens e retornos paginados
 
