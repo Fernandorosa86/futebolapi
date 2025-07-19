@@ -195,12 +195,12 @@ public class PartidaService {
     }
 
     public Page<PartidaResponseDto> listarPartidas(
-            Long clubeId, Long estadioId, Boolean goleadas, int page, int size, String ordenarPor, String direcao
+            Long clubeId, Long estadioId, Boolean goleadas, String local, int page, int size, String ordenarPor, String direcao
     ) {
         Sort.Direction direction = "desc".equalsIgnoreCase(direcao) ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, ordenarPor));
 
-        Page<Partida> partidasPage;
+        List<Partida> partidas;
 
         if (clubeId != null && estadioId != null) {
             Clube clube = clubeRepository.findById(clubeId)
@@ -208,37 +208,50 @@ public class PartidaService {
             Estadio estadio = estadioRepository.findById(estadioId)
                     .orElseThrow(() -> new NotFoundException("Estádio não encontrado"));
 
-            partidasPage = partidaRepository.findByClubeCasaOrClubeForaAndEstadio(clube, clube, estadio, pageable);
+            partidas = partidaRepository.findByClubeCasaOrClubeForaAndEstadio(clube, clube, estadio);
         } else if (clubeId != null) {
             Clube clube = clubeRepository.findById(clubeId)
                     .orElseThrow(() -> new NotFoundException("Clube não encontrado."));
-            partidasPage = partidaRepository.findByClubeCasaOrClubeFora(clube, clube, pageable);
+            partidas = partidaRepository.findByClubeCasaOrClubeFora(clube, clube);
 
         } else if (estadioId != null) {
             Estadio estadio = estadioRepository.findById(estadioId)
                     .orElseThrow(() -> new NotFoundException("Estadio não encontrado."));
-            partidasPage = partidaRepository.findByEstadio(estadio, pageable);
+            partidas = partidaRepository.findByEstadio(estadio);
         } else {
-            partidasPage = partidaRepository.findAll(pageable);
+            partidas = partidaRepository.findAll();
+        }
+
+
+        if (clubeId != null && local != null) {
+            if (local.equalsIgnoreCase("casa")) {
+                partidas = partidas.stream()
+                        .filter(partida -> partida.getClubeCasa().getId().equals(clubeId))
+                        .toList();
+            } else if (local.equalsIgnoreCase("fora")) {
+                partidas = partidas.stream()
+                        .filter(partida -> partida.getClubeFora().getId().equals(clubeId))
+                        .toList();
+            }
         }
 
         if(goleadas == null || !goleadas) {
-            return partidasPage
-                    .map(this::toPartidaResponseDto);
+            partidas = partidas.stream()
+                    .filter(partida -> Math.abs(partida.getGolsCasa() - partida.getGolsFora()) >=3)
+                    .toList();
         }
 
-        List<Partida> listaGoleadas = partidasPage.getContent().stream()
-                .filter(partida -> Math.abs(partida.getGolsCasa() - partida.getGolsFora()) >=3)
-                .toList();
 
-        int start = Math.min(page * size, listaGoleadas.size());
-        int end = Math.min(start + size, listaGoleadas.size());
 
-        List<PartidaResponseDto> pageGoleadas = listaGoleadas.subList(start, end).stream()
+        int start = Math.min(page * size, partidas.size());
+        int end = Math.min(start + size, partidas.size());
+
+        List<PartidaResponseDto> pagePartidas = partidas.subList(start, end).stream()
                 .map(this::toPartidaResponseDto)
                 .toList();
 
-        return new PageImpl<>(pageGoleadas, pageable, listaGoleadas.size());
+        return new PageImpl<>(pagePartidas, pageable, partidas.size());
+
 
     }
 

@@ -9,6 +9,7 @@ public class ClubeRankingDto {
     private int vitorias;
     private int empates;
     private int derrotas;
+    private int jogos;
 
     public int getEmpates() {
         return empates;
@@ -26,7 +27,6 @@ public class ClubeRankingDto {
         this.derrotas = derrotas;
     }
 
-    private int jogos;
 
 
     public Long getClubeId() {

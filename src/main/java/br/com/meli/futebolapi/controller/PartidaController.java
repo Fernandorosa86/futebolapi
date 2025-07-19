@@ -78,13 +78,14 @@ public class PartidaController {
             @RequestParam(required = false) Long clubeId,
             @RequestParam(required = false) Long estadioId,
             @RequestParam(required = false) Boolean goleadas,
+            @RequestParam(required = false) String local,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10")  int size,
             @RequestParam(defaultValue = "id") String ordenarPor,
             @RequestParam(defaultValue = "asc") String direcao
     ){
         try {
-            Page<PartidaResponseDto> pagina = partidaService.listarPartidas(clubeId, estadioId, goleadas, page, size, ordenarPor, direcao);
+            Page<PartidaResponseDto> pagina = partidaService.listarPartidas(clubeId, estadioId, goleadas, local, page, size, ordenarPor, direcao);
             return ResponseEntity.status(HttpStatus.OK).body(pagina);
         } catch (br.com.meli.futebolapi.exception.NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
