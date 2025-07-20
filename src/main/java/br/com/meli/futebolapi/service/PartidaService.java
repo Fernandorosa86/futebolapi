@@ -179,7 +179,7 @@ public class PartidaService {
 
         return toPartidaResponseDto(partida);
 
-        //Tentar refatorar esse código, muita coisa repetida.
+
     }
 
     public void removerPartida(Long id) {
@@ -235,7 +235,7 @@ public class PartidaService {
             }
         }
 
-        if(goleadas == null || !goleadas) {
+        if(goleadas != null && goleadas) {
             partidas = partidas.stream()
                     .filter(partida -> Math.abs(partida.getGolsCasa() - partida.getGolsFora()) >=3)
                     .toList();
