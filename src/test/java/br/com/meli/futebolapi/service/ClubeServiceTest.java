@@ -7,15 +7,12 @@ import br.com.meli.futebolapi.exception.NotFoundException;
 import br.com.meli.futebolapi.repository.ClubeRepository;
 import br.com.meli.futebolapi.repository.PartidaRepository;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -154,7 +151,7 @@ class ClubeServiceTest {
                 10, "id", "asc");
 
         assertEquals(1, resultado.getContent().size());
-        assertEquals("Portuguesa", resultado.getContent().get(0).getNome());
+        assertEquals("Portuguesa", resultado.getContent().getFirst().getNome());
         verify(clubeRepository).findAll(any(Pageable.class));
     }
 
@@ -173,7 +170,7 @@ class ClubeServiceTest {
                 10, "id", "asc");
 
         assertEquals(1, resultado.getContent().size());
-        assertEquals("Flamengo", resultado.getContent().get(0).getNome());
+        assertEquals("Flamengo", resultado.getContent().getFirst().getNome());
         verify(clubeRepository).findByNomeContainingIgnoreCase(eq("Fla"), any(Pageable.class));
 
     }
@@ -195,8 +192,8 @@ class ClubeServiceTest {
                 "Portuguesa", "RJ", true, 0,
                 10, "id", "asc");
         assertEquals(1, resultado.getContent().size());
-        assertEquals("Portuguesa", resultado.getContent().get(0).getNome());
-        assertEquals("RJ", resultado.getContent().get(0).getEstado());
+        assertEquals("Portuguesa", resultado.getContent().getFirst().getNome());
+        assertEquals("RJ", resultado.getContent().getFirst().getEstado());
         verify(clubeRepository).findByNomeContainingIgnoreCaseAndEstadoAndStatus(
                 eq("Portuguesa"), eq("RJ"), eq(true), any(Pageable.class));
     }
@@ -212,5 +209,72 @@ class ClubeServiceTest {
         assertTrue(resultado.isEmpty());
     }
 
+    @Test
+    void listarClubesDeveChamarMetodoPorNomeEEstado() {
+        Clube  clube = new Clube();
+        clube.setId(1L);
+        clube.setNome("Flamengo");
+        clube.setEstado("RJ");
 
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("id"));
+        Page<Clube> page = new PageImpl<>(List.of(clube));
+
+        when(clubeRepository.findByNomeContainsIgnoreCaseAndEstado(eq("Flamengo"), eq("RJ"), any(Pageable.class)))
+                .thenReturn(page);
+
+        Page<ClubeResponseDto> resultado = clubeService.listarClubes(
+                "Flamengo", "RJ", null, 0, 10, "id", "asc");
+
+        assertEquals(1, resultado.getContent().size());
+        assertEquals("Flamengo", resultado.getContent().getFirst().getNome());
+        assertEquals("RJ", resultado.getContent().getFirst().getEstado());
+
+        verify(clubeRepository).findByNomeContainsIgnoreCaseAndEstado(eq("Flamengo"), eq("RJ"), any(Pageable.class));
+
+    }
+
+    @Test
+    void listarClubesDeveFiltrarPorEstado() {
+        Clube clube = new Clube();
+        clube.setId(1L);
+        clube.setNome("Flamengo");
+        clube.setEstado("RJ");
+
+        Page<Clube> page = new PageImpl<>(List.of(clube));
+
+        when(clubeRepository.findByEstado(eq("RJ"), any(Pageable.class)))
+                .thenReturn(page);
+
+
+        Page<ClubeResponseDto> resultado = clubeService.listarClubes(
+                null, "RJ", null, 0, 10, "id", "asc");
+
+
+        assertEquals(1, resultado.getContent().size());
+        assertEquals("Flamengo", resultado.getContent().getFirst().getNome());
+        assertEquals("RJ", resultado.getContent().getFirst().getEstado());
+        verify(clubeRepository).findByEstado(eq("RJ"), any(Pageable.class));
+    }
+
+    @Test
+    void listarClubesDeveFiltrarPorStatus() {
+        Clube  clube = new Clube();
+        clube.setId(1L);
+        clube.setNome("Flamengo");
+        clube.setEstado("RJ");
+
+        Page<Clube> page = new PageImpl<>(List.of(clube));
+
+        when(clubeRepository.findByStatus(eq(true), any(Pageable.class)))
+                .thenReturn(page);
+
+        Page<ClubeResponseDto> resultado = clubeService.listarClubes(
+                null, null, true, 0, 10, "id", "asc");
+
+        assertEquals(1, resultado.getContent().size());
+        assertEquals("Flamengo", resultado.getContent().getFirst().getNome());
+        assertEquals("RJ", resultado.getContent().getFirst().getEstado());
+
+        verify(clubeRepository).findByStatus(eq(true), any(Pageable.class));
+    }
 }

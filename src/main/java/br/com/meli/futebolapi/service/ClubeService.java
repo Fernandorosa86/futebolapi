@@ -30,7 +30,7 @@ public class ClubeService {
     private final ClubeRepository clubeRepository;
     private final PartidaRepository partidaRepository;
 
-    //private final PartidaRepository partidaRepository;
+
     private Clube fromRequestDto(ClubeRequestDto clubeRequestDto) {
         Clube clube = new Clube();
         clube.setNome(clubeRequestDto.getNome());
@@ -53,9 +53,8 @@ public class ClubeService {
         return clubeResponseDto;
     }
 
-    public ClubeService(ClubeRepository clubeRepository, /*, PartidaRepository partidaRepository */PartidaRepository partidaRepository) {
+    public ClubeService(ClubeRepository clubeRepository, PartidaRepository partidaRepository) {
         this.clubeRepository = clubeRepository;
-        // this.partidaRepository = partidaRepository;
         this.partidaRepository = partidaRepository;
     }
 
