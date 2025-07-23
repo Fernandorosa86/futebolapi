@@ -2,7 +2,9 @@ package br.com.meli.futebolapi.service;
 
 import br.com.meli.futebolapi.dto.Clube.ClubeRequestDto;
 import br.com.meli.futebolapi.dto.Clube.ClubeResponseDto;
+import br.com.meli.futebolapi.dto.Retrospecto.RetrospectoResponseDto;
 import br.com.meli.futebolapi.entity.Clube;
+import br.com.meli.futebolapi.entity.Partida;
 import br.com.meli.futebolapi.exception.NotFoundException;
 import br.com.meli.futebolapi.repository.ClubeRepository;
 import br.com.meli.futebolapi.repository.PartidaRepository;
@@ -277,4 +279,114 @@ class ClubeServiceTest {
 
         verify(clubeRepository).findByStatus(eq(true), any(Pageable.class));
     }
+
+    @Test
+    void CalcularRetrospectoDeveLancarExceptionSeClubeNaoExiste() {
+        when(clubeRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> clubeService.calcularRetrospecto(99L));
+    }
+
+    @Test
+    void calcularRetrospectoDeveZerarSeSemPartidas() {
+        Clube  clube = new Clube();
+        clube.setId(1L);
+        when(clubeRepository.findById(1L)).thenReturn(Optional.of(clube));
+        when(partidaRepository.findByClubeCasaOrClubeFora(clube, clube)).thenReturn(List.of());
+
+        RetrospectoResponseDto responseDto = clubeService.calcularRetrospecto(1L);
+
+        assertEquals(0, responseDto.getVitorias());
+        assertEquals(0, responseDto.getEmpates());
+        assertEquals(0, responseDto.getDerrotas());
+        assertEquals(0, responseDto.getGolsFeitos());
+        assertEquals(0, responseDto.getGolsContra());
+    }
+
+    @Test
+    void calcularRetrospectoDeveContarVitorias() {
+        Clube  clube = new Clube();
+        clube.setId(1L);
+        Partida p1 = new Partida();
+        p1.setClubeCasa(clube); p1.setClubeFora(new Clube()); p1.setGolsCasa(3); p1.setGolsFora(0);
+        when(clubeRepository.findById(1L)).thenReturn(Optional.of(clube));
+        when(partidaRepository.findByClubeCasaOrClubeFora(clube, clube)).thenReturn(List.of(p1));
+        RetrospectoResponseDto responseDto = clubeService.calcularRetrospecto(1L);
+        assertEquals(1, responseDto.getVitorias());
+        assertEquals(3, responseDto.getGolsFeitos());
+    }
+
+    @Test
+    void calcularRetrospectoDeveContarEmpates() {
+        Clube  clube = new Clube();
+        clube.setId(1L);
+        Partida p1 = new Partida();
+        p1.setClubeCasa(clube); p1.setClubeFora(new Clube()); p1.setGolsCasa(1); p1.setGolsFora(1);
+        when(clubeRepository.findById(1L)).thenReturn(Optional.of(clube));
+        when(partidaRepository.findByClubeCasaOrClubeFora(clube, clube)).thenReturn(List.of(p1));
+        RetrospectoResponseDto responseDto = clubeService.calcularRetrospecto(1L);
+        assertEquals(1, responseDto.getEmpates() );
+        assertEquals(1, responseDto.getGolsFeitos());
+    }
+
+    @Test
+    void calcularRetrospectoDeveContarDerrotas() {
+        Clube  clube = new Clube();
+        clube.setId(1L);
+        Partida p1 = new Partida();
+        p1.setClubeCasa(clube); p1.setClubeFora(new Clube()); p1.setGolsCasa(0); p1.setGolsFora(1);
+        when(clubeRepository.findById(1L)).thenReturn(Optional.of(clube));
+        when(partidaRepository.findByClubeCasaOrClubeFora(clube, clube)).thenReturn(List.of(p1));
+        RetrospectoResponseDto responseDto = clubeService.calcularRetrospecto(1L);
+        assertEquals(1, responseDto.getDerrotas() );
+        assertEquals(1, responseDto.getGolsContra());
+    }
+
+    @Test
+    void calcularRetrospectoSepararMandanteVisitante() {
+        Clube  clube = new Clube();
+        clube.setId(1L);
+        Clube adversario = new Clube();
+        adversario.setId(2L);
+
+        Partida p1 = new Partida();
+        p1.setClubeCasa(clube); p1.setClubeFora(adversario); p1.setGolsCasa(2); p1.setGolsFora(1);
+        Partida p2 = new Partida();
+        p2.setClubeCasa(adversario); p2.setClubeFora(clube); p2.setGolsCasa(0); p2.setGolsFora(3);
+
+        when(clubeRepository.findById(1L)).thenReturn(Optional.of(clube));
+        when(partidaRepository.findByClubeCasaOrClubeFora(clube, clube)).thenReturn(List.of(p1, p2));
+        RetrospectoResponseDto responseDto = clubeService.calcularRetrospecto(1L);
+
+        assertEquals(2+3, responseDto.getGolsFeitos());
+        assertEquals(1+0, responseDto.getGolsContra());
+    }
+
+    @Test
+    void calcularRetrospectoComTodosOsResultados() {
+        Clube  clube = new Clube();
+        clube.setId(1L);
+        Clube adversario = new Clube();
+        adversario.setId(2L);
+
+        Partida vitoria = new Partida();
+        vitoria.setClubeCasa(clube); vitoria.setClubeFora(adversario); vitoria.setGolsCasa(1); vitoria.setGolsFora(0);
+        Partida empate = new Partida();
+        empate.setClubeCasa(clube); empate.setClubeFora(adversario); empate.setGolsCasa(0); empate.setGolsFora(0);
+        Partida derrota = new Partida();
+        derrota.setClubeCasa(adversario); derrota.setClubeFora(clube); derrota.setGolsCasa(1); derrota.setGolsFora(0);
+        when(clubeRepository.findById(1L)).thenReturn(Optional.of(clube));
+        when(partidaRepository.findByClubeCasaOrClubeFora(clube, clube)).thenReturn(List.of(vitoria, empate, derrota));
+
+        RetrospectoResponseDto responseDto = clubeService.calcularRetrospecto(1L);
+        assertEquals(1, responseDto.getVitorias());
+        assertEquals(1, responseDto.getEmpates());
+        assertEquals(1, responseDto.getDerrotas());
+        assertEquals(1+0+0, responseDto.getGolsFeitos());
+        assertEquals(0+0+1, responseDto.getGolsContra());
+    }
+
+
+
+
+
 }
