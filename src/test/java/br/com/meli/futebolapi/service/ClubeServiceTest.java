@@ -406,7 +406,7 @@ class ClubeServiceTest {
     }
 
     @Test
-    void retrospectoContraAdversariosVitórias() {
+    void retrospectoContraAdversariosVitorias() {
         Clube clube = new Clube(); clube.setId(1L);
         Clube adversario = new Clube(); adversario.setId(2L); adversario.setNome("Vasco");
         Partida p = new Partida();
