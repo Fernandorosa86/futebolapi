@@ -150,7 +150,7 @@ public class PartidaService {
         List<Partida> partidasFora = partidaRepository.findByClubeCasaOrClubeFora(clubeFora, clubeFora);
         for (Partida p : partidasFora) {
             if (!p.getId().equals(id)) {
-                LocalDateTime dataJogo = partida.getDataHora();
+                LocalDateTime dataJogo = p.getDataHora();
                 if (!dataJogo.isBefore(inicio) && !dataJogo.isAfter(fim)) {
                     throw new DataIntegrityViolationException("Clube visitante já possui partida marcada a menos de 48 horas desta.");
                 }
