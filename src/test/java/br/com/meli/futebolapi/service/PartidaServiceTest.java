@@ -160,6 +160,76 @@ public class PartidaServiceTest {
     }
 
     @Test
+    void cadastrarPartidaDeveLancarExceptionSeVisitanteTemJogoEm48h() {
+        Clube clubeCasa = new Clube();
+        clubeCasa.setId(1L);
+        clubeCasa.setDataCriacao(LocalDate.of(2020,1,1));
+        clubeCasa.setStatus(true);
+
+        Clube clubeFora = new Clube();
+        clubeFora.setId(2L);
+        clubeFora.setDataCriacao(LocalDate.of(2020,1,1));
+        clubeFora.setStatus(true);
+
+        Estadio estadio = new Estadio();
+        estadio.setId(33L);
+
+
+        LocalDateTime dataCadastro = LocalDateTime.of(2024, 8, 10, 16, 0);
+
+
+        Partida partidaConflito = new Partida();
+        partidaConflito.setId(50L);
+        partidaConflito.setDataHora(dataCadastro.minusHours(24));
+
+        PartidaRequestDto req = new PartidaRequestDto();
+        req.setClubeCasaId(1L);
+        req.setClubeForaId(2L);
+        req.setEstadioId(33L);
+        req.setDataHora(dataCadastro);
+        req.setGolsCasa(2);
+        req.setGolsFora(1);
+
+
+        when(clubeRepository.findById(1L)).thenReturn(Optional.of(clubeCasa));
+        when(clubeRepository.findById(2L)).thenReturn(Optional.of(clubeFora));
+        when(estadioRepository.findById(33L)).thenReturn(Optional.of(estadio));
+        when(partidaRepository.findByClubeCasaOrClubeFora(clubeCasa, clubeCasa)).thenReturn(List.of());
+        when(partidaRepository.findByClubeCasaOrClubeFora(clubeFora, clubeFora)).thenReturn(List.of(partidaConflito));
+        when(partidaRepository.findByEstadioAndDataHoraBetween(eq(estadio), any(), any())).thenReturn(List.of());
+
+
+        assertThrows(DataIntegrityViolationException.class, () -> partidaService.cadastrarPartida(req));
+    }
+
+    @Test
+    void cadastrarPartidaDeveLancarExcecaoSeClubeMandanteInativo() {
+        Clube clubeCasa = new Clube();
+        clubeCasa.setId(1L);
+        clubeCasa.setStatus(false);
+        clubeCasa.setDataCriacao(LocalDate.of(2020,1,1));
+        Clube clubeFora = new Clube();
+        clubeFora.setId(2L);
+        clubeFora.setStatus(true);
+        clubeFora.setDataCriacao(LocalDate.of(2020,1,1));
+        Estadio estadio = new Estadio(); estadio.setId(33L);
+
+        PartidaRequestDto req = new PartidaRequestDto();
+        req.setClubeCasaId(1L);
+        req.setClubeForaId(2L);
+        req.setEstadioId(33L);
+        req.setDataHora(LocalDateTime.now());
+        req.setGolsCasa(0);
+        req.setGolsFora(0);
+
+        when(clubeRepository.findById(1L)).thenReturn(Optional.of(clubeCasa));
+        when(clubeRepository.findById(2L)).thenReturn(Optional.of(clubeFora));
+        when(estadioRepository.findById(33L)).thenReturn(Optional.of(estadio));
+
+        assertThrows(DataIntegrityViolationException.class, () -> partidaService.cadastrarPartida(req));
+    }
+
+    @Test
     void removerPartidaSucesso() {
         Partida partida = new Partida();
         partida.setId(22L);
@@ -377,58 +447,55 @@ public class PartidaServiceTest {
     }
 
     @Test
-    void editarPartidaDeveLancarExcecaoSeVisitanteTemConflitoDe48Horas() {
+    void editarPartidaDeveLancarExcecaoSeVisitanteTemJogoEmMenosDe48Horas() {
         Clube clubeCasa = new Clube();
         clubeCasa.setId(1L);
-        clubeCasa.setDataCriacao(LocalDate.of(2020,1,1));
+        clubeCasa.setDataCriacao(LocalDate.of(2020, 1, 1));
         clubeCasa.setStatus(true);
 
         Clube clubeFora = new Clube();
         clubeFora.setId(2L);
-        clubeFora.setDataCriacao(LocalDate.of(2020,1,1));
+        clubeFora.setDataCriacao(LocalDate.of(2020, 1, 1));
         clubeFora.setStatus(true);
 
-        Estadio estadio = new Estadio(); estadio.setId(33L);
+        Estadio estadio = new Estadio(); estadio.setId(10L);
 
         Partida partidaExistente = new Partida();
         partidaExistente.setId(99L);
         partidaExistente.setClubeCasa(clubeCasa);
         partidaExistente.setClubeFora(clubeFora);
         partidaExistente.setEstadio(estadio);
-        partidaExistente.setDataHora(LocalDateTime.of(2024, 8, 10, 16, 0));
+        partidaExistente.setDataHora(LocalDateTime.of(2024, 1, 10, 10, 0));
+
 
         Partida partidaConflito = new Partida();
         partidaConflito.setId(100L);
-        partidaConflito.setDataHora(LocalDateTime.of(2024, 8, 10, 10, 0));
+        partidaConflito.setDataHora(LocalDateTime.of(2024, 1, 9, 12, 0));
 
         PartidaRequestDto req = new PartidaRequestDto();
         req.setClubeCasaId(1L);
         req.setClubeForaId(2L);
-        req.setEstadioId(33L);
-        req.setDataHora(LocalDateTime.of(2024, 8, 10, 16, 0));
+        req.setEstadioId(10L);
+        req.setDataHora(LocalDateTime.of(2024, 1, 10, 10, 0)); // novo horário
         req.setGolsCasa(2);
         req.setGolsFora(1);
+
 
         when(partidaRepository.findById(99L)).thenReturn(Optional.of(partidaExistente));
         when(clubeRepository.findById(1L)).thenReturn(Optional.of(clubeCasa));
         when(clubeRepository.findById(2L)).thenReturn(Optional.of(clubeFora));
-        when(estadioRepository.findById(33L)).thenReturn(Optional.of(estadio));
+        when(estadioRepository.findById(10L)).thenReturn(Optional.of(estadio));
 
+        when(partidaRepository.findByClubeCasaOrClubeFora(clubeCasa, clubeCasa)).thenReturn(List.of());
 
-        lenient().when(partidaRepository.findByClubeCasaOrClubeFora(any(Clube.class), any(Clube.class)))
-                .thenAnswer(invocation -> {
-                    Clube c1 = invocation.getArgument(0);
-                    Clube c2 = invocation.getArgument(1);
-                    if (c1 != null && c2 != null && c1.getId() == 2L && c2.getId() == 2L) {
-                        return List.of(partidaConflito);
-                    }
-                    return List.of();
-                });
-
+        when(partidaRepository.findByClubeCasaOrClubeFora(clubeFora, clubeFora)).thenReturn(List.of(partidaConflito));
         when(partidaRepository.findByEstadioAndDataHoraBetween(eq(estadio), any(), any())).thenReturn(List.of());
 
-        assertThrows(DataIntegrityViolationException.class, () -> partidaService.editarPartida(99L, req));
+
+        assertThrows(DataIntegrityViolationException.class, () ->
+                partidaService.editarPartida(99L, req));
     }
+
 
     @Test
     void editarPartidaDeveAtualizarEDevolverResponseDoBanco() {
@@ -639,7 +706,7 @@ public class PartidaServiceTest {
                 1L, null, true, null, 0, 10, "id", "asc");
 
         assertEquals(1, resultado.getContent().size());
-        assertEquals(4, resultado.getContent().get(0).getGolsCasa());
+        assertEquals(4, resultado.getContent().getFirst().getGolsCasa());
     }
 
     @Test
@@ -658,7 +725,7 @@ public class PartidaServiceTest {
                 1L, 22L, true, "casa", 0, 10, "id", "asc"
         );
         assertEquals(1, resultado.getContent().size());
-        assertEquals(5, resultado.getContent().get(0).getGolsCasa());
+        assertEquals(5, resultado.getContent().getFirst().getGolsCasa());
     }
 
     @Test
