@@ -1,5 +1,6 @@
 package br.com.meli.futebolapi.service;
 
+import br.com.meli.futebolapi.dto.Clube.ClubeRankingDto;
 import br.com.meli.futebolapi.dto.Clube.ClubeRequestDto;
 import br.com.meli.futebolapi.dto.Clube.ClubeResponseDto;
 import br.com.meli.futebolapi.dto.Confronto.ConfrontoDiretoResponseDto;
@@ -666,6 +667,134 @@ class ClubeServiceTest {
         assertEquals(1, dto.getRetrospectoClubeA().getEmpates());
         assertEquals(1, dto.getRetrospectoClubeB().getEmpates());
         assertEquals(1, dto.getPartidas().size());
+    }
+
+    @Test
+    void getConfrontoDiretoDeveContarDerrotasQuandoClubeAPerdeParaB() {
+        Clube clubeA = new Clube();
+        clubeA.setId(1L);
+        clubeA.setNome("Fluminense");
+
+        Clube clubeB = new Clube();
+        clubeB.setId(2L);
+        clubeB.setNome("Flamengo");
+
+        Partida partida = new Partida();
+        partida.setId(11L);
+        partida.setEstadio(new Estadio());
+        partida.setClubeCasa(clubeA);
+        partida.setClubeFora(clubeB);
+        partida.setGolsCasa(1);
+        partida.setGolsFora(4);
+
+        when(clubeRepository.findById(1L)).thenReturn(Optional.of(clubeA));
+        when(clubeRepository.findById(2L)).thenReturn(Optional.of(clubeB));
+        when(partidaRepository.findByClubeCasaAndClubeForaOrClubeCasaAndClubeFora(clubeA, clubeB, clubeB, clubeA))
+                .thenReturn(List.of(partida));
+
+        ConfrontoDiretoResponseDto dto = clubeService.getConfrontoDireto(1L, 2L);
+
+        assertEquals(1, dto.getRetrospectoClubeB().getVitorias());
+        assertEquals(1, dto.getRetrospectoClubeA().getDerrotas());
+        assertEquals(0, dto.getRetrospectoClubeA().getVitorias());
+        assertEquals(0, dto.getRetrospectoClubeB().getDerrotas());
+    }
+
+    @Test
+    void getRankingDeveOrdenarPorPontosComVitoriasEEmpates() {
+        Clube c1 = new Clube(); c1.setId(1L); c1.setNome("A"); c1.setEstado("RJ");
+        Clube c2 = new Clube(); c2.setId(2L); c2.setNome("B"); c2.setEstado("SP");
+
+
+        Partida p1 = new Partida(); p1.setClubeCasa(c1); p1.setClubeFora(c2); p1.setGolsCasa(2); p1.setGolsFora(1);
+        Partida p2 = new Partida(); p2.setClubeCasa(c2); p2.setClubeFora(c1); p2.setGolsCasa(1); p2.setGolsFora(1);
+
+        when(clubeRepository.findAll()).thenReturn(List.of(c1, c2));
+        when(partidaRepository.findByClubeCasaOrClubeFora(eq(c1), eq(c1))).thenReturn(List.of(p1, p2));
+        when(partidaRepository.findByClubeCasaOrClubeFora(eq(c2), eq(c2))).thenReturn(List.of(p1, p2));
+
+        List<ClubeRankingDto> ranking = clubeService.getRanking("pontos");
+        assertEquals(2, ranking.size());
+        assertEquals("A", ranking.get(0).getClubeNome());
+        assertEquals("B", ranking.get(1).getClubeNome());
+    }
+
+    @Test
+    void getRankingDeveExcluirSemGolsQuandoCriterioForGols() {
+        Clube c1 = new Clube(); c1.setId(1L); c1.setNome("A"); c1.setEstado("RJ");
+        Clube c2 = new Clube(); c2.setId(2L); c2.setNome("B"); c2.setEstado("SP");
+
+        Partida gol = new Partida(); gol.setClubeCasa(c1); gol.setClubeFora(c2);
+        gol.setGolsCasa(2); gol.setGolsFora(1);
+
+        when(clubeRepository.findAll()).thenReturn(List.of(c1, c2));
+        when(partidaRepository.findByClubeCasaOrClubeFora(eq(c1), eq(c1))).thenReturn(List.of(gol));
+        when(partidaRepository.findByClubeCasaOrClubeFora(eq(c2), eq(c2))).thenReturn(List.of(gol));
+
+        List<ClubeRankingDto> ranking = clubeService.getRanking("gols");
+        assertEquals(2, ranking.size());
+        assertEquals("A", ranking.get(0).getClubeNome());
+    }
+
+    @Test
+    void getRankingDeveExcluirSemVitoriasQuandoCriterioForVitorias() {
+        Clube c1 = new Clube(); c1.setId(1L); c1.setNome("A"); c1.setEstado("RJ");
+        Clube c2 = new Clube(); c2.setId(2L); c2.setNome("B"); c2.setEstado("SP");
+
+        Partida empate = new Partida(); empate.setClubeCasa(c1); empate.setClubeFora(c2); empate.setGolsCasa(1); empate.setGolsFora(1);
+
+        when(clubeRepository.findAll()).thenReturn(List.of(c1, c2));
+        when(partidaRepository.findByClubeCasaOrClubeFora(eq(c1), eq(c1))).thenReturn(List.of(empate));
+        when(partidaRepository.findByClubeCasaOrClubeFora(eq(c2), eq(c2))).thenReturn(List.of(empate));
+
+        List<ClubeRankingDto> ranking = clubeService.getRanking("vitorias");
+        assertTrue(ranking.isEmpty());
+    }
+
+    @Test
+    void getRankingDeveExcluirSemJogosQuandoCriterioForJogos() {
+        Clube c1 = new Clube(); c1.setId(1L); c1.setNome("A"); c1.setEstado("RJ");
+        Clube c2 = new Clube(); c2.setId(2L); c2.setNome("B"); c2.setEstado("SP");
+
+
+        Partida p1 = new Partida(); p1.setClubeCasa(c1); p1.setClubeFora(new Clube()); p1.setGolsCasa(1); p1.setGolsFora(0);
+
+        when(clubeRepository.findAll()).thenReturn(List.of(c1, c2));
+        when(partidaRepository.findByClubeCasaOrClubeFora(eq(c1), eq(c1))).thenReturn(List.of(p1));
+        when(partidaRepository.findByClubeCasaOrClubeFora(eq(c2), eq(c2))).thenReturn(List.of());
+
+        List<ClubeRankingDto> ranking = clubeService.getRanking("jogos");
+        assertEquals(1, ranking.size());
+        assertEquals("A", ranking.get(0).getClubeNome());
+    }
+
+    @Test
+    void getRankingDeveRetornarVazioQuandoNadaSeEncaixaNoCriterio() {
+        Clube c1 = new Clube(); c1.setId(1L); c1.setNome("A"); c1.setEstado("RJ");
+        Clube c2 = new Clube(); c2.setId(2L); c2.setNome("B"); c2.setEstado("SP");
+
+        when(clubeRepository.findAll()).thenReturn(List.of(c1, c2));
+        when(partidaRepository.findByClubeCasaOrClubeFora(eq(c1), eq(c1))).thenReturn(List.of());
+        when(partidaRepository.findByClubeCasaOrClubeFora(eq(c2), eq(c2))).thenReturn(List.of());
+
+        List<ClubeRankingDto> ranking = clubeService.getRanking("gols");
+        assertTrue(ranking.isEmpty());
+    }
+
+    @Test
+    void getRankingOrdenaCorretamentePorCriterio() {
+        Clube c1 = new Clube(); c1.setId(1L); c1.setNome("A"); c1.setEstado("RJ");
+        Clube c2 = new Clube(); c2.setId(2L); c2.setNome("B"); c2.setEstado("SP");
+
+
+        Partida p1 = new Partida(); p1.setClubeCasa(c1); p1.setClubeFora(c2); p1.setGolsCasa(4); p1.setGolsFora(2);
+
+        when(clubeRepository.findAll()).thenReturn(List.of(c1, c2));
+        when(partidaRepository.findByClubeCasaOrClubeFora(eq(c1), eq(c1))).thenReturn(List.of(p1));
+        when(partidaRepository.findByClubeCasaOrClubeFora(eq(c2), eq(c2))).thenReturn(List.of(p1));
+
+        List<ClubeRankingDto> ranking = clubeService.getRanking("gols");
+        assertEquals("A", ranking.get(0).getClubeNome());
     }
 
 
