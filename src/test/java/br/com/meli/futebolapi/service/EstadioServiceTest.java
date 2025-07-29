@@ -19,8 +19,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -159,6 +158,36 @@ public class EstadioServiceTest {
         resultado = estadioService.listarEstadios("  ", 0, 10, "nome", "asc");
         assertEquals(1, resultado.getContent().size());
         assertEquals("Beira Rio", resultado.getContent().getFirst().getNome());
+    }
+
+    @Test
+    void buscarEstadioPorIdDeveRetornarQuandoExiste() {
+
+        Estadio estadio = new Estadio();
+        estadio.setId(1L);
+        estadio.setNome("Maracanã");
+
+
+        when(estadioRepository.findById(1L)).thenReturn(Optional.of(estadio));
+
+
+        EstadioResponseDto response = estadioService.buscarEstadioPorId(1L);
+
+
+        assertNotNull(response);
+        assertEquals(1L, response.getId());
+        assertEquals("Maracanã", response.getNome());
+        verify(estadioRepository).findById(1L);
+    }
+
+    @Test
+    void buscarEstadioPorIdDeveLancarNotFoundQuandoNaoExiste() {
+
+        when(estadioRepository.findById(999L)).thenReturn(Optional.empty());
+
+
+        assertThrows(NotFoundException.class, () -> estadioService.buscarEstadioPorId(999L));
+        verify(estadioRepository).findById(999L);
     }
 
 
