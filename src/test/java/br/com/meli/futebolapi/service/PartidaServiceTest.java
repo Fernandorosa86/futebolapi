@@ -17,14 +17,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -481,6 +481,194 @@ public class PartidaServiceTest {
         assertEquals(0, dto.getGolsFora());
         assertEquals(LocalDateTime.of(2024, 8, 12, 17, 0), dto.getDataHora());
         verify(partidaRepository).save(any(Partida.class));
+    }
+
+    @Test
+    void listarPartidasDeveRetornarTodasSemFiltro() {
+        Clube clubeCasa = new Clube(); clubeCasa.setId(1L); clubeCasa.setNome("Flamengo");
+        Clube clubeFora = new Clube(); clubeFora.setId(2L); clubeFora.setNome("Vasco");
+        Estadio estadio = new Estadio(); estadio.setId(3L); estadio.setNome("Maracanã");
+        Partida p1 = new Partida();
+        p1.setId(10L);
+        p1.setClubeCasa(clubeCasa);
+        p1.setClubeFora(clubeFora);
+        p1.setEstadio(estadio);
+        p1.setGolsCasa(4);
+        p1.setGolsFora(2);
+        p1.setDataHora(LocalDateTime.now());
+
+        when(partidaRepository.findAll()).thenReturn(List.of(p1));
+        when(partidaRepository.findAll()).thenReturn(List.of(p1));
+
+        Page<PartidaResponseDto> dto = partidaService.listarPartidas(
+                null, null, null, null, 0, 10, "id", "asc"
+        );
+
+        assertEquals(1, dto.getContent().size());
+        verify(partidaRepository).findAll();
+    }
+
+    @Test
+    void listarPartidasPorClube() {
+        Clube clube = new Clube(); clube.setId(1L);
+        Partida p1 = new Partida(); p1.setEstadio(new Estadio()); p1.setClubeCasa(clube); p1.setClubeFora(new Clube());
+
+        when(clubeRepository.findById(1L)).thenReturn(Optional.of(clube));
+        when(partidaRepository.findByClubeCasaOrClubeFora(eq(clube), eq(clube))).thenReturn(List.of(p1));
+
+        Page<PartidaResponseDto> resultado = partidaService.listarPartidas(
+                1L, null, null, null, 0, 10, "id", "asc");
+        assertEquals(1, resultado.getContent().size());
+        verify(partidaRepository).findByClubeCasaOrClubeFora(eq(clube), eq(clube));
+    }
+
+    @Test
+    void listarPartidasPorEstadio() {
+        Clube clubeCasa = new Clube();
+        clubeCasa.setId(1L);
+        clubeCasa.setNome("Flamengo");
+
+        Clube clubeFora = new Clube();
+        clubeFora.setId(2L);
+        clubeFora.setNome("Vasco");
+
+        Estadio estadio = new Estadio(); estadio.setId(15L);
+
+        Partida p1 = new Partida();
+        p1.setEstadio(estadio);
+        p1.setClubeCasa(clubeCasa);
+        p1.setClubeFora(clubeFora);
+        p1.setId(11L);
+        p1.setDataHora(LocalDateTime.now());
+
+
+
+        when(estadioRepository.findById(15L)).thenReturn(Optional.of(estadio));
+        when(partidaRepository.findByEstadio(estadio)).thenReturn(List.of(p1));
+
+        Page<PartidaResponseDto> resultado = partidaService.listarPartidas(
+                null, 15L, null, null, 0, 10, "id", "asc");
+        assertEquals(1, resultado.getContent().size());
+        verify(partidaRepository).findByEstadio(estadio);
+    }
+
+    @Test
+    void listarPartidasPorClubeEEstadio() {
+        Clube clube = new Clube(); clube.setId(1L); clube.setNome("Flamengo");
+        Clube visitante = new Clube(); visitante.setId(2L); visitante.setNome("Vasco");
+
+        Estadio estadio = new Estadio(); estadio.setId(5L);
+        Partida p1 = new Partida(); p1.setEstadio(estadio); p1.setClubeCasa(clube); p1.setClubeFora(visitante);
+
+        when(clubeRepository.findById(1L)).thenReturn(Optional.of(clube));
+        when(estadioRepository.findById(5L)).thenReturn(Optional.of(estadio));
+        when(partidaRepository.findByClubeCasaOrClubeForaAndEstadio(clube, clube, estadio)).thenReturn(List.of(p1));
+
+        Page<PartidaResponseDto> resultado = partidaService.listarPartidas(
+                1L, 5L, null, null, 0, 10, "id", "asc");
+
+        assertEquals(1, resultado.getContent().size());
+        verify(partidaRepository).findByClubeCasaOrClubeForaAndEstadio(clube, clube, estadio);
+    }
+
+    @Test
+    void listarPartidasDeveLancarNotFoundSeClubeNaoExiste() {
+        when(clubeRepository.findById(7L)).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () ->
+                partidaService.listarPartidas(7L, null, null, null, 0, 10, "id", "asc"));
+    }
+
+    @Test
+    void listarPartidasDeveLancarNotFoundSeEstadioNaoExiste() {
+        when(estadioRepository.findById(22L)).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () ->
+                partidaService.listarPartidas(null, 22L, null, null, 0, 10, "id", "asc"));
+    }
+
+    @Test
+    void listarPartidasLocalCasa() {
+        Clube clube = new Clube(); clube.setId(1L);
+        Clube clube2 = new Clube(); clube2.setId(2L);
+        Partida casa = new Partida(); casa.setEstadio(new Estadio()); casa.setClubeCasa(clube); casa.setClubeFora(clube2);
+        Partida fora = new Partida(); fora.setEstadio(new Estadio()); fora.setClubeFora(clube); fora.setClubeCasa(clube2);
+        when(clubeRepository.findById(1L)).thenReturn(Optional.of(clube));
+        when(partidaRepository.findByClubeCasaOrClubeFora(eq(clube), eq(clube)))
+                .thenReturn(List.of(casa, fora));
+
+        Page<PartidaResponseDto> resultado = partidaService.listarPartidas(
+                1L, null, null, "casa", 0, 10, "id", "asc");
+
+        assertEquals(1, resultado.getContent().size());
+
+    }
+
+    @Test
+    void listarPartidasLocalFora() {
+        Clube clube = new Clube(); clube.setId(1L);
+        Clube clube2 = new Clube(); clube2.setId(2L);
+        Partida casa = new Partida(); casa.setEstadio(new Estadio()); casa.setClubeCasa(clube); casa.setClubeFora(clube2);
+        Partida fora = new Partida(); fora.setEstadio(new Estadio()); fora.setClubeFora(clube); fora.setClubeCasa(clube2);
+        when(clubeRepository.findById(1L)).thenReturn(Optional.of(clube));
+        when(partidaRepository.findByClubeCasaOrClubeFora(eq(clube), eq(clube)))
+                .thenReturn(List.of(casa, fora));
+
+        Page<PartidaResponseDto> resultado = partidaService.listarPartidas(
+                1L, null, null, "fora", 0, 10, "id", "asc");
+
+        assertEquals(1, resultado.getContent().size());
+
+    }
+
+    @Test
+    void listarPartidasSoGoleadas() {
+        Clube clube = new Clube(); clube.setId(1L);
+        Partida goleada = new Partida();
+        goleada.setEstadio(new Estadio());
+        goleada.setClubeCasa(clube); goleada.setClubeFora(new Clube());
+        goleada.setGolsCasa(4); goleada.setGolsFora(0);
+        Partida normal = new Partida();
+        normal.setEstadio(new Estadio());
+        normal.setClubeCasa(clube); normal.setClubeFora(new Clube());
+        normal.setGolsCasa(2); normal.setGolsFora(1);
+
+        when(clubeRepository.findById(1L)).thenReturn(Optional.of(clube));
+        when(partidaRepository.findByClubeCasaOrClubeFora(eq(clube), eq(clube)))
+                .thenReturn(List.of(goleada, normal));
+
+        Page<PartidaResponseDto> resultado = partidaService.listarPartidas(
+                1L, null, true, null, 0, 10, "id", "asc");
+
+        assertEquals(1, resultado.getContent().size());
+        assertEquals(4, resultado.getContent().get(0).getGolsCasa());
+    }
+
+    @Test
+    void listarPartidasTodosFiltrosCombinados() {
+        Clube clube = new Clube(); clube.setId(1L); clube.setNome("Flamengo");
+        Clube clube2 = new Clube(); clube2.setId(2L); clube2.setNome("Fluminense");
+        Estadio estadio = new Estadio(); estadio.setId(22L);
+        Partida p = new Partida();
+        p.setClubeCasa(clube); p.setClubeFora(clube2); p.setEstadio(estadio); p.setGolsCasa(5); p.setGolsFora(2);
+
+        when(clubeRepository.findById(1L)).thenReturn(Optional.of(clube));
+        when(estadioRepository.findById(22L)).thenReturn(Optional.of(estadio));
+        when(partidaRepository.findByClubeCasaOrClubeForaAndEstadio(clube, clube, estadio)).thenReturn(List.of(p));
+
+        Page<PartidaResponseDto> resultado = partidaService.listarPartidas(
+                1L, 22L, true, "casa", 0, 10, "id", "asc"
+        );
+        assertEquals(1, resultado.getContent().size());
+        assertEquals(5, resultado.getContent().get(0).getGolsCasa());
+    }
+
+    @Test
+    void listarPartidasNenhumResultado() {
+        when(partidaRepository.findAll()).thenReturn(List.of());
+
+        Page<PartidaResponseDto> resultado = partidaService.listarPartidas(
+                null, null, null, null, 0, 10, "id", "asc"
+        );
+        assertTrue(resultado.getContent().isEmpty());
     }
 
 }
